@@ -53,7 +53,7 @@ categories that the simplified view shows by default:
 | Large Language Models | Top of the axis |
 
 The full rationale for the Y axis ordering lives on the
-[Required Data Maturity](https://part-io.github.io/ai-security-landscape/about/data-maturity/)
+[Required Data Maturity](https://secureio-gmbh.github.io/ai-security-landscape/about/data-maturity/)
 explainer page.
 
 ### Spanning multiple areas

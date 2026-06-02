@@ -39,9 +39,10 @@ jobs:
           SITE_URL: ${{ steps.pages.outputs.origin }}
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
           # secureIO whitelabel overrides. Repo link points at this fork,
-          # company logo shows in the header.
+          # theme-aware company logo shows in the header.
           REPO_URL: https://github.com/secureIO-GmbH/ai-security-landscape
-          BRAND_LOGO_PATH: /branding/secureio-logo.png
+          BRAND_LOGO_LIGHT: /branding/secureio-logo-black.png
+          BRAND_LOGO_DARK: /branding/secureio-logo-white.png
           BRAND_LOGO_HREF: https://secure-io.de/
           BRAND_LOGO_ALT: secureIO
         run: npm run build
