@@ -1,0 +1,48 @@
+name: Sync from upstream (Part-IO/ai-security-landscape)
+
+# Pulls the upstream main into this fork's main. Runs daily at 04:00 UTC
+# and can also be triggered manually. If a merge conflict occurs (rare,
+# because REPO_URL and BRAND_LOGO_* are configured in deploy.yml rather
+# than hardcoded), this job fails and you need to resolve it locally.
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Merge upstream/main into main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/Part-IO/ai-security-landscape.git
+
+      - name: Fetch upstream
+        run: git fetch upstream main
+
+      - name: Fast-forward or merge
+        run: |
+          if git merge-base --is-ancestor HEAD upstream/main; then
+            echo "Fast-forward possible. Pulling."
+            git merge --ff-only upstream/main
+          else
+            echo "Non-fast-forward merge needed."
+            git merge --no-edit --no-ff upstream/main
+          fi
+
+      - name: Push to fork
+        run: git push origin main
