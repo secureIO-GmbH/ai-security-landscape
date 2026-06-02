@@ -16,12 +16,23 @@ const fullTitle =
 const baseHref = import.meta.env.BASE_URL;
 
 // Optional brand logo, controlled by env vars at build time. A downstream
-// fork (e.g. secureIO's whitelabel version) sets BRAND_LOGO_PATH to a file
-// it has placed under public/, and the logo renders in the header.
+// fork (e.g. secureIO's whitelabel version) places asset files under
+// public/ and points env vars at them; the logo renders in the header.
 // Default: no logo, header looks unchanged.
-const brandLogoPath = process.env.BRAND_LOGO_PATH || "";
+//
+// Two variants are supported so the logo can adapt to the site's light /
+// dark theme:
+//   BRAND_LOGO_LIGHT  path to the logo file for light mode
+//   BRAND_LOGO_DARK   path to the logo file for dark mode
+// BRAND_LOGO_PATH is the legacy single-logo fallback used for both modes.
+const brandLogoEnv = process.env.BRAND_LOGO_PATH || "";
+const brandLogoLight =
+  process.env.BRAND_LOGO_LIGHT || brandLogoEnv || process.env.BRAND_LOGO_DARK || "";
+const brandLogoDark =
+  process.env.BRAND_LOGO_DARK || brandLogoEnv || process.env.BRAND_LOGO_LIGHT || "";
 const brandLogoHref = process.env.BRAND_LOGO_HREF || baseHref;
 const brandLogoAlt = process.env.BRAND_LOGO_ALT || "Brand logo";
+const hasBrandLogo = brandLogoLight !== "" || brandLogoDark !== "";
 ---
 
 <!doctype html>
@@ -56,14 +67,27 @@ const brandLogoAlt = process.env.BRAND_LOGO_ALT || "Brand logo";
         <div class="site-header-right">
           <div class="site-tagline">AI use cases in cybersecurity, mapped.</div>
           {
-            brandLogoPath && (
+            hasBrandLogo && (
               <a
                 href={brandLogoHref}
                 class="brand-logo-link"
                 target={brandLogoHref.startsWith("http") ? "_blank" : undefined}
                 rel={brandLogoHref.startsWith("http") ? "noopener noreferrer" : undefined}
               >
-                <img src={brandLogoPath} alt={brandLogoAlt} class="brand-logo" />
+                {brandLogoLight && (
+                  <img
+                    src={brandLogoLight}
+                    alt={brandLogoAlt}
+                    class="brand-logo brand-logo-for-light"
+                  />
+                )}
+                {brandLogoDark && (
+                  <img
+                    src={brandLogoDark}
+                    alt={brandLogoAlt}
+                    class="brand-logo brand-logo-for-dark"
+                  />
+                )}
               </a>
             )
           }

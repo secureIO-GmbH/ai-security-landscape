@@ -141,6 +141,17 @@ code {
   display: block;
 }
 
+/* Theme-conditional logos. When both BRAND_LOGO_LIGHT and BRAND_LOGO_DARK
+   are configured the two variants get swapped via CSS based on the current
+   theme. If only one is configured, both classes point at the same file. */
+:root[data-theme="light"] .brand-logo-for-dark {
+  display: none;
+}
+
+:root:not([data-theme="light"]) .brand-logo-for-light {
+  display: none;
+}
+
 .theme-toggle {
   font-family: inherit;
   font-size: 1rem;
