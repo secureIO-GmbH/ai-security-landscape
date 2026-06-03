@@ -7,8 +7,8 @@ departments:
   - "Security Engineering & Data Security"
   - "AppSec & Product Security"
 hero_image:
-  src: "../../assets/topics/genai-threat-modeling/iriusrisk-mcp-workflow.png"
-  alt: "MCP workflow diagram: developers in VSCode + Copilot, security team, agentic AI ecosystem, and external services (Google Drive, Jira, Confluence) connect through an MCP server to IriusRisk Enterprise for continuous threat modelling."
+  src: "../../assets/topics/genai-threat-modeling/mcp-threat-modeling-workflow.png"
+  alt: "Platform-agnostic MCP workflow diagram. On the customer side: an agentic AI ecosystem, individual users via AI chat clients (Claude, ChatGPT, Gemini), developers via AI IDEs (Cursor, Windsurf, VSCode + Copilot), a CI/CD pipeline, and the security team. They all connect through a Threat Modeling Tool MCP Server (streamable HTTP or stdio) on the vendor side, which talks to the threat-modeling tool's backend. The security team can also reach the backend directly. External services such as wikis, ticketing and document repositories sit alongside the AI surfaces."
   caption: "MCP-based threat modelling during development. The reality, not the plan."
 factors:
   business_impact: 8
