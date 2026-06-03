@@ -25,11 +25,26 @@ const baseHref = import.meta.env.BASE_URL;
 //   BRAND_LOGO_LIGHT  path to the logo file for light mode
 //   BRAND_LOGO_DARK   path to the logo file for dark mode
 // BRAND_LOGO_PATH is the legacy single-logo fallback used for both modes.
+//
+// Pre-pend the configured Astro base path to relative asset paths so the
+// logo resolves correctly on GitHub Pages project sites
+// (https://<org>.github.io/<repo>/...). Absolute URLs (http/https) are
+// passed through unchanged so a logo hosted elsewhere also works.
+function withBase(p: string): string {
+  if (!p) return "";
+  if (/^https?:\/\//i.test(p)) return p;
+  const base = baseHref.replace(/\/$/, "");
+  const path = p.startsWith("/") ? p : "/" + p;
+  return `${base}${path}`;
+}
+
 const brandLogoEnv = process.env.BRAND_LOGO_PATH || "";
-const brandLogoLight =
+const brandLogoLightRaw =
   process.env.BRAND_LOGO_LIGHT || brandLogoEnv || process.env.BRAND_LOGO_DARK || "";
-const brandLogoDark =
+const brandLogoDarkRaw =
   process.env.BRAND_LOGO_DARK || brandLogoEnv || process.env.BRAND_LOGO_LIGHT || "";
+const brandLogoLight = withBase(brandLogoLightRaw);
+const brandLogoDark = withBase(brandLogoDarkRaw);
 const brandLogoHref = process.env.BRAND_LOGO_HREF || baseHref;
 const brandLogoAlt = process.env.BRAND_LOGO_ALT || "Brand logo";
 const hasBrandLogo = brandLogoLight !== "" || brandLogoDark !== "";
