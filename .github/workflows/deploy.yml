@@ -44,7 +44,7 @@ jobs:
           REPO_URL: https://github.com/secureIO-GmbH/ai-security-landscape
           BRAND_LOGO_LIGHT: /branding/secureio-logo-black.png
           BRAND_LOGO_DARK: /branding/secureio-logo-white.png
-          BRAND_LOGO_HREF: https://secure-io.de/
+          BRAND_LOGO_HREF: https://www.secure-io.de/
           BRAND_LOGO_ALT: secureIO
           FOOTER_PROJECT_BY_TEXT: www.secure-io.de
           FOOTER_PROJECT_BY_URL: https://www.secure-io.de
