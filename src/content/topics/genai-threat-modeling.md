@@ -8,8 +8,8 @@ departments:
   - "AppSec & Product Security"
 hero_image:
   src: "../../assets/topics/genai-threat-modeling/mcp-threat-modeling-workflow.png"
-  alt: "Platform-agnostic MCP workflow diagram. On the customer side: an agentic AI ecosystem, individual users via AI chat clients (Claude, ChatGPT, Gemini), developers via AI IDEs (Cursor, Windsurf, VSCode + Copilot), a CI/CD pipeline, and the security team. They all connect through a Threat Modeling Tool MCP Server (streamable HTTP or stdio) on the vendor side, which talks to the threat-modeling tool's backend. The security team can also reach the backend directly. External services such as wikis, ticketing and document repositories sit alongside the AI surfaces."
-  caption: "MCP-based threat modelling during development. The reality, not the plan."
+  alt: "Three-column workflow diagram for MCP-based threat modelling. Left column (Customer environment): four actor boxes (Agentic AI Ecosystem, Any user, Developers, Security Team) and two tool boxes (AI Chat with Claude/ChatGPT/Gemini, AI IDE with Cursor/Windsurf/VSCode + Copilot). Middle column (CI/CD): a CI/CD Pipeline box doing build, test, scan and running a threat-model hook. Right column (Vendor environment): a Threat Modeling Tool MCP Server (streamable HTTP / stdio) feeding into a Threat Modeling Tool backend. Three numbered arrows trace the main developer workflow: 1. git push from AI IDE to the CI/CD Pipeline, 2. CI/CD triggers the MCP Server, 3. MCP Server updates the threat model in the backend. Side flows show ad-hoc queries from AI Chat, autonomous queries from the agentic AI ecosystem, and direct review by the security team straight against the backend. A footer note explains that findings (step 4) surface as Jira tickets, PR comments and alerts that loop back to developers and the security team."
+  caption: "MCP-based threat modelling as a continuous, CI/CD-driven cycle. The reality, not the plan."
 factors:
   business_impact: 8
   cost_efficiency: 5
