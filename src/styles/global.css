@@ -198,6 +198,20 @@ code {
   text-align: center;
 }
 
+.site-footer .footer-byline {
+  margin-top: 0.4rem;
+}
+
+.site-footer a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.site-footer a:hover {
+  color: var(--link);
+}
+
 .badge {
   display: inline-block;
   font-size: 0.75rem;

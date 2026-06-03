@@ -48,6 +48,20 @@ const brandLogoDark = withBase(brandLogoDarkRaw);
 const brandLogoHref = process.env.BRAND_LOGO_HREF || baseHref;
 const brandLogoAlt = process.env.BRAND_LOGO_ALT || "Brand logo";
 const hasBrandLogo = brandLogoLight !== "" || brandLogoDark !== "";
+
+// Optional footer additions, configured per deployment via env vars.
+//   FOOTER_PROJECT_BY_TEXT  display text of the "A project by X" line
+//   FOOTER_PROJECT_BY_URL   URL the text links to
+//   FOOTER_IMPRESSUM_URL    URL for the "Impressum" link (German legal notice)
+// All three default to empty; in that case the footer renders only the
+// default "Open source · MIT License · Contributions welcome" line.
+const footerProjectByText = process.env.FOOTER_PROJECT_BY_TEXT || "";
+const footerProjectByUrl = process.env.FOOTER_PROJECT_BY_URL || "";
+const footerImpressumUrl = process.env.FOOTER_IMPRESSUM_URL || "";
+const hasProjectBy =
+  footerProjectByText !== "" && footerProjectByUrl !== "";
+const hasImpressum = footerImpressumUrl !== "";
+const hasFooterByline = hasProjectBy || hasImpressum;
 ---
 
 <!doctype html>
@@ -123,7 +137,37 @@ const hasBrandLogo = brandLogoLight !== "" || brandLogoDark !== "";
       <slot />
     </main>
     <footer class="site-footer">
-      Open source · MIT · Contributions welcome
+      <div>Open source · MIT License · Contributions welcome</div>
+      {
+        hasFooterByline && (
+          <div class="footer-byline">
+            {hasProjectBy && (
+              <span>
+                A project by{" "}
+                <a
+                  href={footerProjectByUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {footerProjectByText}
+                </a>
+              </span>
+            )}
+            {hasProjectBy && hasImpressum && (
+              <span class="footer-sep"> · </span>
+            )}
+            {hasImpressum && (
+              <a
+                href={footerImpressumUrl}
+                target={footerImpressumUrl.startsWith("http") ? "_blank" : undefined}
+                rel={footerImpressumUrl.startsWith("http") ? "noopener noreferrer" : undefined}
+              >
+                Impressum
+              </a>
+            )}
+          </div>
+        )
+      }
     </footer>
 
     <script>
