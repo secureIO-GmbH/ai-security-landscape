@@ -6,6 +6,7 @@ import KeyFactorBars from "../../components/KeyFactorBars.astro";
 import ConnectionsDiagram, {
   type RelatedTopic,
 } from "../../components/ConnectionsDiagram.astro";
+import CostCurveChart from "../../components/CostCurveChart.astro";
 import { DEPARTMENT_COLOR } from "../../content/config";
 
 function colorFor(dept?: string): string {
@@ -108,17 +109,21 @@ const repoEditUrl = `${repoBaseUrl}/edit/main/src/content/topics/${topic.slug}.m
       </header>
 
       {
-        topic.data.hero_image && (
-          <figure class="hero-image">
-            <Image
-              src={topic.data.hero_image.src}
-              alt={topic.data.hero_image.alt}
-              loading="eager"
-            />
-            {topic.data.hero_image.caption && (
-              <figcaption>{topic.data.hero_image.caption}</figcaption>
-            )}
-          </figure>
+        topic.slug === "ai-native-code-scanning" ? (
+          <CostCurveChart />
+        ) : (
+          topic.data.hero_image && (
+            <figure class="hero-image">
+              <Image
+                src={topic.data.hero_image.src}
+                alt={topic.data.hero_image.alt}
+                loading="eager"
+              />
+              {topic.data.hero_image.caption && (
+                <figcaption>{topic.data.hero_image.caption}</figcaption>
+              )}
+            </figure>
+          )
         )
       }
 

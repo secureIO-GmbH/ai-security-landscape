@@ -1,0 +1,368 @@
+---
+// Interactive cost-curve chart for AI-native code scanning.
+// Linear axes, single best-estimate line plus a shaded variance band,
+// hover tooltip showing the exact range at the cursor position.
+---
+
+<figure class="cost-curve-figure">
+  <div class="cost-curve-wrapper">
+    <svg
+      id="cost-curve-svg"
+      viewBox="0 0 820 480"
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label="Interactive cost-curve chart: cost per AI scan as a function of codebase size from 0 to 500,000 lines of code, showing a shaded variance band between $0.88 and $3 per thousand lines plus a best-estimate line. Measured data point at 3,000 lines = $2.64."
+    ></svg>
+    <div id="cost-curve-tooltip" class="cost-curve-tooltip" hidden></div>
+  </div>
+  <figcaption>
+    Cost per AI scan as a function of codebase size. The line is the
+    best-estimate; the shaded band shows the realistic range. Linear at
+    small scale, super-linear at larger scale (see section&nbsp;3 below).
+  </figcaption>
+</figure>
+
+<script>
+  import * as d3 from "d3";
+
+  const W = 820;
+  const H = 480;
+  const MARGIN = { top: 30, right: 30, bottom: 60, left: 80 };
+  const INNER_W = W - MARGIN.left - MARGIN.right;
+  const INNER_H = H - MARGIN.top - MARGIN.bottom;
+
+  // Cost model.
+  // Lower bound: linear at $0.88/k LOC. Reflects the optimised case
+  //   (selective scanning, strong caching). Matches the secureIO 3k-LOC
+  //   measurement of $2.64.
+  // Upper bound: power law with exponent 1.25. Reflects the naive case
+  //   where the agent re-reads context on every reasoning step (Endor
+  //   Labs analysis, RepoMod-Bench "scaling collapse" above ~50k LOC).
+  // Mid line: power law with exponent 1.125 (geometric mean of lower
+  //   and upper). Realistic best-estimate for a production deployment.
+  const BASE_RATE = 0.88; // $/k LOC anchor
+
+  function lowerBound(loc: number): number {
+    return BASE_RATE * (loc / 1000);
+  }
+  function upperBound(loc: number): number {
+    return BASE_RATE * Math.pow(loc / 1000, 1.25);
+  }
+  function midBound(loc: number): number {
+    return BASE_RATE * Math.pow(loc / 1000, 1.125);
+  }
+
+  interface Point {
+    loc: number;
+    lower: number;
+    mid: number;
+    upper: number;
+  }
+
+  function render() {
+    const svgNode = document.getElementById("cost-curve-svg");
+    if (!svgNode) return;
+    const svg = d3.select<SVGSVGElement, unknown>("#cost-curve-svg");
+    svg.selectAll("*").remove();
+
+    const g = svg
+      .append("g")
+      .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+
+    const x = d3.scaleLinear().domain([0, 500000]).range([0, INNER_W]);
+    const y = d3.scaleLinear().domain([0, 2500]).range([INNER_H, 0]);
+
+    // Build data points along the curve
+    const points: Point[] = [];
+    for (let loc = 0; loc <= 500000; loc += 2500) {
+      points.push({
+        loc,
+        lower: lowerBound(loc),
+        mid: midBound(loc),
+        upper: upperBound(loc),
+      });
+    }
+
+    const xTicks = [0, 100000, 200000, 300000, 400000, 500000];
+    const yTicks = [0, 500, 1000, 1500, 2000, 2500];
+
+    // Grid lines
+    g.append("g")
+      .attr("class", "grid")
+      .selectAll("line.h-grid")
+      .data(yTicks)
+      .join("line")
+      .attr("class", "h-grid")
+      .attr("x1", 0)
+      .attr("x2", INNER_W)
+      .attr("y1", (d) => y(d))
+      .attr("y2", (d) => y(d));
+
+    g.append("g")
+      .attr("class", "grid")
+      .selectAll("line.v-grid")
+      .data(xTicks)
+      .join("line")
+      .attr("class", "v-grid")
+      .attr("y1", 0)
+      .attr("y2", INNER_H)
+      .attr("x1", (d) => x(d))
+      .attr("x2", (d) => x(d));
+
+    // Variance band (filled area between lower and upper)
+    const area = d3
+      .area<Point>()
+      .x((d) => x(d.loc))
+      .y0((d) => y(d.lower))
+      .y1((d) => y(d.upper));
+
+    g.append("path")
+      .datum(points)
+      .attr("class", "variance-band")
+      .attr("d", area);
+
+    // Best-estimate line
+    const line = d3
+      .line<Point>()
+      .x((d) => x(d.loc))
+      .y((d) => y(d.mid));
+
+    g.append("path")
+      .datum(points)
+      .attr("class", "best-estimate-line")
+      .attr("d", line);
+
+    // Axes
+    const xAxis = d3
+      .axisBottom(x)
+      .tickValues(xTicks)
+      .tickFormat((d) => (d === 0 ? "0" : `${(+d / 1000).toLocaleString()}k`));
+
+    const yAxis = d3
+      .axisLeft(y)
+      .tickValues(yTicks)
+      .tickFormat((d) => `$${(+d).toLocaleString()}`);
+
+    g.append("g")
+      .attr("class", "axis x-axis")
+      .attr("transform", `translate(0,${INNER_H})`)
+      .call(xAxis);
+    g.append("g").attr("class", "axis y-axis").call(yAxis);
+
+    // Axis titles
+    g.append("text")
+      .attr("class", "axis-title")
+      .attr("x", INNER_W / 2)
+      .attr("y", INNER_H + 48)
+      .attr("text-anchor", "middle")
+      .text("Lines of Code");
+
+    g.append("text")
+      .attr("class", "axis-title")
+      .attr("transform", `translate(-56,${INNER_H / 2}) rotate(-90)`)
+      .attr("text-anchor", "middle")
+      .text("Cost per scan ($)");
+
+    // Hover interaction
+    const tooltip = d3.select<HTMLDivElement, unknown>("#cost-curve-tooltip");
+    const bisect = d3.bisector<Point, number>((d) => d.loc).left;
+
+    const focusLine = g
+      .append("line")
+      .attr("class", "focus-line")
+      .attr("y1", 0)
+      .attr("y2", INNER_H)
+      .style("display", "none");
+
+    const focusDots = g.append("g").attr("class", "focus-dots").style("display", "none");
+    focusDots.append("circle").attr("class", "focus-dot focus-dot-lower").attr("r", 4);
+    focusDots.append("circle").attr("class", "focus-dot focus-dot-mid").attr("r", 4);
+    focusDots.append("circle").attr("class", "focus-dot focus-dot-upper").attr("r", 4);
+
+    // Transparent overlay to catch all mouse events
+    g.append("rect")
+      .attr("class", "hover-overlay")
+      .attr("width", INNER_W)
+      .attr("height", INNER_H)
+      .attr("fill", "transparent")
+      .on("mousemove", (event) => {
+        const [px] = d3.pointer(event, g.node());
+        const loc = Math.max(0, Math.min(500000, x.invert(px)));
+        const idx = bisect(points, loc);
+        const p0 = points[Math.max(0, idx - 1)];
+        const p1 = points[Math.min(points.length - 1, idx)];
+        const p = loc - p0.loc < p1.loc - loc ? p0 : p1;
+
+        focusLine
+          .attr("x1", x(p.loc))
+          .attr("x2", x(p.loc))
+          .style("display", null);
+        focusDots
+          .style("display", null)
+          .attr("transform", `translate(${x(p.loc)}, 0)`);
+        focusDots.select(".focus-dot-lower").attr("cy", y(p.lower));
+        focusDots.select(".focus-dot-mid").attr("cy", y(p.mid));
+        focusDots.select(".focus-dot-upper").attr("cy", y(p.upper));
+
+        const locLabel =
+          p.loc === 0
+            ? "0 LOC"
+            : `${(p.loc / 1000).toLocaleString()}k LOC`;
+        const range = `$${p.lower.toFixed(0)} – $${p.upper.toFixed(0)}`;
+        const mid = `$${p.mid.toFixed(0)}`;
+        tooltip
+          .html(
+            `<div class="tt-loc">${locLabel}</div>` +
+              `<div class="tt-range">Range: <strong>${range}</strong></div>` +
+              `<div class="tt-mid">Best estimate: <strong>${mid}</strong></div>`,
+          )
+          .attr("hidden", null);
+
+        const wrapper = document.querySelector(".cost-curve-wrapper") as HTMLElement | null;
+        if (wrapper) {
+          const rect = wrapper.getBoundingClientRect();
+          tooltip
+            .style("left", event.clientX - rect.left + 16 + "px")
+            .style("top", event.clientY - rect.top - 56 + "px");
+        }
+      })
+      .on("mouseleave", () => {
+        focusLine.style("display", "none");
+        focusDots.style("display", "none");
+        tooltip.attr("hidden", true);
+      });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", render);
+  } else {
+    render();
+  }
+</script>
+
+<style>
+  .cost-curve-figure {
+    margin: 0 0 1.75rem;
+    padding: 1.25rem 1rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .cost-curve-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 820px;
+    margin: 0 auto;
+  }
+
+  #cost-curve-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .cost-curve-figure figcaption {
+    margin: 0.7rem auto 0;
+    max-width: 70ch;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-style: italic;
+    line-height: 1.55;
+  }
+
+  /* Chart elements. :global() is required because the D3-created SVG
+     children do not inherit Astro's scoped-style hash, and would
+     otherwise fall back to the SVG default (black fill). */
+  #cost-curve-svg :global(.grid line) {
+    stroke: var(--border);
+    stroke-dasharray: 2 4;
+    opacity: 0.55;
+    fill: none;
+  }
+
+  #cost-curve-svg :global(.axis path),
+  #cost-curve-svg :global(.axis line) {
+    stroke: var(--text-muted);
+    fill: none;
+  }
+
+  #cost-curve-svg :global(.axis text) {
+    fill: var(--text);
+    font-size: 13px;
+    font-family: var(--font-sans);
+  }
+
+  #cost-curve-svg :global(.axis-title) {
+    fill: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+  }
+
+  #cost-curve-svg :global(.variance-band) {
+    fill: #5b8def;
+    fill-opacity: 0.16;
+    stroke: none;
+  }
+
+  #cost-curve-svg :global(.best-estimate-line) {
+    stroke: #2c5fc7;
+    stroke-width: 2;
+    fill: none;
+  }
+
+  #cost-curve-svg :global(.focus-line) {
+    stroke: var(--text-muted);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    fill: none;
+  }
+
+  #cost-curve-svg :global(.focus-dot) {
+    fill: var(--text);
+    stroke: var(--bg);
+    stroke-width: 1.5;
+  }
+
+  #cost-curve-svg :global(.hover-overlay) {
+    fill: transparent;
+    cursor: crosshair;
+  }
+
+  .cost-curve-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.82rem;
+    color: var(--text);
+    z-index: 10;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    white-space: nowrap;
+  }
+
+  .cost-curve-tooltip[hidden] {
+    display: none;
+  }
+
+  .cost-curve-tooltip .tt-loc {
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+
+  .cost-curve-tooltip .tt-range,
+  .cost-curve-tooltip .tt-mid {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    line-height: 1.55;
+  }
+
+  .cost-curve-tooltip strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+</style>

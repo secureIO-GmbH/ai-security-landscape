@@ -269,3 +269,15 @@ code {
 .prose tr:nth-child(even) td {
   background: color-mix(in srgb, var(--bg-card) 35%, transparent);
 }
+
+/* Selective highlighting for comparison tables. Add class "positive" or
+   "negative" on a <td> to mark the clear winner / loser per row. */
+.prose table.comparison-table td.positive {
+  background: color-mix(in srgb, #5fae5f 18%, transparent);
+  border-left: 3px solid #5fae5f;
+}
+
+.prose table.comparison-table td.negative {
+  background: color-mix(in srgb, #d83737 18%, transparent);
+  border-left: 3px solid #d83737;
+}
